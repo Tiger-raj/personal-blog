@@ -56,7 +56,7 @@ export default function DashProfile() {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setImageFileUploadingProgress(progress.toFixed(0));
       },
-      (error) => {
+      () => {
         // if got error
         setImageFileUploadError("Could not upload image (File much be less than 2MB) ");
         setImageFileUploadingProgress(null);
