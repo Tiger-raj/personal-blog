@@ -8,6 +8,8 @@ import { getStorage, uploadBytesResumable, ref, getDownloadURL } from "firebase/
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { useNavigate } from "react-router-dom";
+import { signoutSuccess } from "../redux/user/userSlice";
+import { useDispatch } from "react-redux";
 export default function CreatePost() {
   const [file, setFile] = useState(null);
   const [imageeUploadProgress, setImageeUploadProgress] = useState(null);
@@ -15,6 +17,24 @@ export default function CreatePost() {
   const [formData, setFormData] = useState({});
   const [publishError, setPublishError] = useState(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const handleSignout = async () => {
+    try {
+      const res = await fetch(`/api/user/signout`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.log(data.message);
+        return;
+      } else {
+        dispatch(signoutSuccess());
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   const handleUploadImage = async () => {
     try {
       if (!file) {
@@ -65,6 +85,10 @@ export default function CreatePost() {
       const data = await res.json();
       if (!res.ok) {
         setPublishError(data.message);
+        if (data.statusCode === 401) {
+          setTimeout(handleSignout, 1000);
+          // handleSignout();
+        }
         return;
       }
       if (res.ok) {
