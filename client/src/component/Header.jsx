@@ -52,10 +52,10 @@ export default function Header() {
       </Link>
       <form onSubmit={handleSubmit}>
         <TextInput type="text" placeholder="Search..." rightIcon={AiOutlineSearch} className="hidden lg:inline" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <Button type="submit" className="w-12 h-10 lg:hidden" color="gray" pill>
+          <AiOutlineSearch />
+        </Button>
       </form>
-      <Button className="w-12 h-10 lg:hidden" color="gray" pill>
-        <AiOutlineSearch />
-      </Button>
       <div className="flex gap-2 md:order-2">
         <Button className="w-12 h-10 hidden sm:inline" color="gray" pill onClick={() => dispatch(toggleTheme())}>
           {theme === "light" ? <FaMoon /> : <FaSun />}
