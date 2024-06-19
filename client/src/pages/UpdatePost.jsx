@@ -13,16 +13,17 @@ export default function UpdatePost() {
   const [file, setFile] = useState(null);
   const [imageUploadProgress, setImageUploadProgress] = useState(null);
   const [imageUploadError, setImageUploadError] = useState(null);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(null);
   const [publishError, setPublishError] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state
   const { postId } = useParams();
 
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
 
   useEffect(() => {
-    try {
-      const fetchPost = async () => {
+    const fetchPost = async () => {
+      try {
         const res = await fetch(`/api/post/getposts?postId=${postId}`);
         const data = await res.json();
         if (!res.ok) {
@@ -30,19 +31,20 @@ export default function UpdatePost() {
           setPublishError(data.message);
           return;
         }
-        if (res.ok) {
-          setPublishError(null);
-          setFormData(data.posts[0]);
-        }
-      };
+        setPublishError(null);
+        setFormData(data.posts[0]);
+        setLoading(false); // Set loading to false after data is fetched
+      } catch (error) {
+        console.log(error.message);
+        setPublishError("Failed to fetch post data");
+        setLoading(false); // Set loading to false in case of an error
+      }
+    };
 
-      fetchPost();
-    } catch (error) {
-      console.log(error.message);
-    }
+    fetchPost();
   }, [postId]);
 
-  const handleUpdloadImage = async () => {
+  const handleUploadImage = async () => {
     try {
       if (!file) {
         setImageUploadError("Please select an image");
@@ -78,10 +80,15 @@ export default function UpdatePost() {
       console.log(error);
     }
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/post/updatepost/${formData && formData._id}/${currentUser._id}`, {
+      if (!formData || !formData._id) {
+        setPublishError("Post data is not loaded yet");
+        return;
+      }
+      const res = await fetch(`/api/post/updatepost/${formData._id}/${currentUser._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -94,21 +101,24 @@ export default function UpdatePost() {
         return;
       }
 
-      if (res.ok) {
-        setPublishError(null);
-        navigate(`/post/${data.slug}`);
-      }
+      setPublishError(null);
+      navigate(`/post/${data.slug}`);
     } catch (error) {
       setPublishError("Something went wrong");
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Show loading indicator
+  }
+
   return (
     <div className="p-3 max-w-3xl mx-auto min-h-screen">
       <h1 className="text-center text-3xl my-7 font-semibold">Update post</h1>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-4 sm:flex-row justify-between">
-          <TextInput type="text" placeholder="Title" required id="title" className="flex-1" onChange={(e) => setFormData({ ...formData, title: e.target.value })} value={formData && formData.title} />
-          <Select onChange={(e) => setFormData({ ...formData, category: e.target.value })} value={formData && formData.category}>
+          <TextInput type="text" placeholder="Title" required id="title" className="flex-1" onChange={(e) => setFormData({ ...formData, title: e.target.value })} value={formData?.title || ""} />
+          <Select onChange={(e) => setFormData({ ...formData, category: e.target.value })} value={formData?.category || "uncategorized"}>
             <option value="uncategorized">Select a category</option>
             <option value="javascript">JavaScript</option>
             <option value="reactjs">React.js</option>
@@ -117,7 +127,7 @@ export default function UpdatePost() {
         </div>
         <div className="flex gap-4 items-center justify-between border-4 border-teal-500 border-dotted p-3">
           <FileInput type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
-          <Button type="button" gradientDuoTone="purpleToBlue" size="sm" outline onClick={handleUpdloadImage} disabled={imageUploadProgress}>
+          <Button type="button" gradientDuoTone="purpleToBlue" size="sm" outline onClick={handleUploadImage} disabled={imageUploadProgress}>
             {imageUploadProgress ? (
               <div className="w-16 h-16">
                 <CircularProgressbar value={imageUploadProgress} text={`${imageUploadProgress || 0}%`} />
@@ -128,10 +138,10 @@ export default function UpdatePost() {
           </Button>
         </div>
         {imageUploadError && <Alert color="failure">{imageUploadError}</Alert>}
-        {formData.image && <img src={formData && formData.image} alt="upload" className="w-full h-72 object-cover" />}
+        {formData?.image && <img src={formData.image} alt="upload" className="w-full h-72 object-cover" />}
         <ReactQuill
           theme="snow"
-          value={formData && formData.content}
+          value={formData?.content || ""}
           placeholder="Write something..."
           className="h-72 mb-12"
           required
@@ -139,7 +149,7 @@ export default function UpdatePost() {
             setFormData({ ...formData, content: value });
           }}
         />
-        <Button type="submit" gradientDuoTone="purpleToPink">
+        <Button type="submit" gradientDuoTone="purpleToPink" disabled={!formData}>
           Update post
         </Button>
         {publishError && (
